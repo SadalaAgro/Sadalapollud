@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Põldude kaart</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f4f2ee;
+  --panel:#ffffff;
+  --panel2:#f8f7f4;
+  --border:#e4e0d8;
+  --border2:#ccc8be;
+  --text:#1a1714;
+  --text2:#4a4540;
+  --muted:#8c8680;
+  --accent:#2d6a4f;
+  --accent-bg:#eaf2ed;
+  --own:#1e4d8c;
+  --own-bg:#eaeff8;
+  --rent:#8b4513;
+  --rent-bg:#f5ece5;
+  --inactive:#b8b4ae;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.07);
+  --shadow:0 2px 12px rgba(0,0,0,.09);
+  --shadow-md:0 4px 20px rgba(0,0,0,.12);
+  --r:6px;--r-sm:4px;
+}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;line-height:1.4;}
+
+/* HEADER */
+header{background:var(--panel);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:18px;height:56px;flex-shrink:0;z-index:1000;box-shadow:var(--shadow-sm);}
+.logo{display:flex;align-items:center;gap:10px;white-space:nowrap;}
+.logo-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:16px;height:16px;}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--text);}
+.logo-sub{font-size:10px;color:var(--muted);font-weight:400;margin-top:1px;}
+.hdiv{width:1px;height:28px;background:var(--border);flex-shrink:0;}
+.controls{display:flex;align-items:center;gap:8px;flex:1;}
+.cg{display:flex;flex-direction:column;gap:2px;}
+.cl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+select{font-family:inherit;font-size:12px;font-weight:500;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 28px 5px 10px;cursor:pointer;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238c8680' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .15s,box-shadow .15s;min-width:120px;}
+select:hover{border-color:var(--border2);}
+select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,106,79,.1);}
+.hstats{display:flex;align-items:center;gap:14px;margin-left:auto;flex-shrink:0;}
+.hstat{display:flex;flex-direction:column;align-items:flex-end;}
+.hstat-val{font-size:16px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-.3px;}
+.hstat-val.green{color:var(--accent);}
+.hstat-lbl{font-size:10px;color:var(--muted);font-weight:500;margin-top:1px;}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;position:relative;}
+#map{flex:1;}
+
+/* SIDEBAR */
+.sidebar{width:260px;background:var(--panel);border-left:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;}
+.sb-sec{padding:13px 15px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sb-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.sb-badge{font-size:10px;font-weight:600;color:var(--accent);background:var(--accent-bg);padding:1px 8px;border-radius:20px;}
+
+/* LAYER TOGGLES */
+.lrow{display:flex;align-items:center;gap:10px;padding:5px 6px;border-radius:var(--r-sm);cursor:pointer;transition:background .12s;margin-bottom:2px;}
+.lrow:last-child{margin-bottom:0;}
+.lrow:hover{background:var(--panel2);}
+.tog{position:relative;width:32px;height:18px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;position:absolute;}
+.tog-track{position:absolute;inset:0;background:#d4cfc6;border-radius:9px;transition:background .2s;}
+.tog input:checked+.tog-track{background:var(--accent);}
+.tog-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);pointer-events:none;}
+.tog input:checked~.tog-thumb{transform:translateX(14px);}
+.lrow-txt{display:flex;flex-direction:column;}
+.lrow-name{font-size:12px;font-weight:500;color:var(--text);}
+.lrow-sub{font-size:10px;color:var(--muted);}
+
+/* SUMMARY CARDS */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.card{background:var(--panel2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;}
+.card.own{border-left:3px solid var(--own);}
+.card.rent{border-left:3px solid var(--rent);}
+.card-val{font-size:15px;font-weight:700;line-height:1;letter-spacing:-.3px;color:var(--text);}
+.card-val.own{color:var(--own);}
+.card-val.rent{color:var(--rent);}
+.card-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:2px;}
+
+/* OWNERSHIP BAR */
+.obar{height:6px;border-radius:3px;overflow:hidden;display:flex;background:var(--border);margin-bottom:4px;}
+.obar-own{background:var(--own);transition:width .35s cubic-bezier(.4,0,.2,1);}
+.obar-rent{background:var(--rent);transition:width .35s cubic-bezier(.4,0,.2,1);}
+.obar-lbls{display:flex;justify-content:space-between;}
+.obar-lbl{font-size:10px;font-weight:600;}
+.obar-lbl.own{color:var(--own);}
+.obar-lbl.rent{color:var(--rent);}
+.kast-note{font-size:9px;color:var(--muted);margin-top:4px;font-style:italic;}
+
+/* LEGEND PANEL */
+.leg-panel{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.leg-hdr{padding:11px 15px 7px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
+.leg-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.leg-badge{font-size:10px;font-weight:600;color:var(--accent);background:var(--accent-bg);padding:1px 8px;border-radius:20px;}
+.leg-scroll{overflow-y:auto;flex:1;padding:5px 9px 12px;}
+
+/* CULTURE ROWS */
+.crow{border-radius:var(--r-sm);cursor:pointer;padding:6px 7px 4px;margin-bottom:2px;transition:background .12s;border:1px solid transparent;}
+.crow:hover{background:var(--panel2);}
+.crow.active{background:var(--accent-bg);border-color:rgba(45,106,79,.2);}
+.crow-top{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.crow-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);}
+.crow-name{font-size:11px;font-weight:500;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.crow-ha{font-size:11px;font-weight:700;white-space:nowrap;}
+.crow-pct{font-size:10px;color:var(--muted);margin-left:2px;}
+.crow-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.crow-bar-fill{height:100%;border-radius:2px;transition:width .35s cubic-bezier(.4,0,.2,1);}
+.crow-chips{display:flex;gap:10px;}
+.chip{font-size:9.5px;display:flex;align-items:center;gap:3px;color:var(--muted);}
+.chip-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* SOIL LEGEND */
+.srow{padding:6px 7px 4px;margin-bottom:2px;border-radius:var(--r-sm);}
+.srow-top{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.srow-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);}
+.srow-name{font-size:11px;font-weight:500;color:var(--text);flex:1;}
+.srow-ha{font-size:11px;font-weight:700;white-space:nowrap;}
+.srow-pct{font-size:10px;color:var(--muted);margin-left:2px;}
+.srow-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.srow-bar-fill{height:100%;border-radius:2px;transition:width .35s cubic-bezier(.4,0,.2,1);}
+.snote{font-size:9.5px;color:var(--muted);margin-top:8px;padding:7px 9px;background:var(--panel2);border-radius:var(--r-sm);border:1px solid var(--border);line-height:1.5;}
+
+/* GEO BTN */
+.geo-btn{position:absolute;bottom:88px;right:10px;z-index:900;width:36px;height:36px;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:all .15s;}
+.geo-btn:hover{background:var(--accent);border-color:var(--accent);}
+.geo-btn:hover svg path,.geo-btn:hover svg circle{stroke:#fff;}
+/* BASEMAP SWITCHER */
+.bmap-wrap{position:absolute;bottom:136px;right:10px;z-index:900;display:flex;flex-direction:column;gap:4px;}
+.bmap-btn{width:36px;height:36px;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:all .15s;padding:0;overflow:hidden;}
+.bmap-btn:hover{border-color:var(--accent);}
+.bmap-btn.active{border-color:var(--accent);border-width:2px;box-shadow:0 0 0 1px var(--accent);}
+.bmap-btn img{width:36px;height:36px;object-fit:cover;border-radius:calc(var(--r) - 1px);}
+.bmap-label{position:absolute;right:44px;background:var(--panel);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px 7px;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;box-shadow:var(--shadow-sm);opacity:0;pointer-events:none;transition:opacity .15s;}
+.bmap-btn:hover .bmap-label{opacity:1;}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:rgba(244,242,238,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;gap:14px;}
+.loader{width:36px;height:36px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loader-text{font-size:12px;color:var(--muted);font-weight:500;}
+
+/* POPUP */
+.leaflet-popup-content-wrapper{background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);font-family:inherit;padding:0;}
+.leaflet-popup-content{margin:0;min-width:250px;max-width:320px;}
+.pu{padding:14px 16px;}
+.pu-pria{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;}
+.pu-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.pu-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.pu-badge.own{background:var(--own-bg);color:var(--own);}
+.pu-badge.rent{background:var(--rent-bg);color:var(--rent);}
+.pu-badge.muted{background:var(--panel2);color:var(--muted);border:1px solid var(--border);}
+.pu-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;}
+.pu-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
+.pu-f{background:var(--panel2);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 8px;}
+.pu-f.full{grid-column:1/-1;}
+.pu-fl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:1px;}
+.pu-fv{font-size:11.5px;font-weight:600;color:var(--text);word-break:break-word;}
+.pu-div{height:1px;background:var(--border);margin:8px 0;}
+.pu-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px;}
+.pu-yr{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.pu-yr-lbl{font-size:10px;font-weight:600;color:var(--muted);width:28px;flex-shrink:0;}
+.pu-yr-badge{font-size:10.5px;font-weight:500;padding:2px 8px;border-radius:var(--r-sm);border:1px solid transparent;}
+.pu-yr-inactive{font-size:10px;color:var(--inactive);font-style:italic;padding:2px 0;}
+/* Kataster list */
+.pu-kast-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--border);}
+.pu-kast-row:last-of-type{border-bottom:none;}
+.pu-kast-id{font-size:11px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+.pu-kast-tag{font-size:9.5px;font-weight:600;padding:1px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.pu-kast-tag.own{background:var(--own-bg);color:var(--own);}
+.pu-kast-tag.rent{background:var(--rent-bg);color:var(--rent);}
+.leaflet-popup-tip{background:var(--panel);}
+.leaflet-popup-close-button{color:var(--muted)!important;top:8px!important;right:10px!important;font-size:18px!important;}
+
+/* LEAFLET */
+.leaflet-control-zoom{border:1px solid var(--border)!important;border-radius:var(--r)!important;box-shadow:var(--shadow)!important;overflow:hidden;}
+.leaflet-control-zoom a{color:var(--text)!important;background:var(--panel)!important;border-bottom:1px solid var(--border)!important;font-size:16px!important;}
+.leaflet-control-zoom a:hover{background:var(--panel2)!important;}
+.leaflet-control-attribution{font-family:inherit!important;font-size:9px!important;}
+
+/* SEARCH */
+.search-wrap{display:flex;align-items:center;gap:0;flex-shrink:0;}
+.search-box{position:relative;display:flex;align-items:center;}
+.search-input{font-family:inherit;font-size:12px;font-weight:500;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:var(--r-sm) 0 0 var(--r-sm);padding:5px 28px 5px 10px;outline:none;width:190px;transition:border-color .15s,box-shadow .15s;}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,106,79,.1);}
+.search-input::placeholder{color:var(--muted);}
+.search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;padding:0;display:none;width:16px;height:16px;align-items:center;justify-content:center;}
+.search-clear:hover{color:var(--text);}
+.search-btn{font-family:inherit;font-size:12px;font-weight:600;background:var(--accent);color:#fff;border:1px solid var(--accent);border-left:none;border-radius:0 var(--r-sm) var(--r-sm) 0;padding:5px 12px;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.search-btn:hover{background:#245a42;}
+.search-msg{font-size:10px;margin-left:7px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+.search-msg.ok{color:var(--accent);}
+.search-msg.err{color:var(--rent);}
+.search-highlight{animation:searchPulse 2s ease-out forwards;}
+@keyframes searchPulse{0%{stroke:#ff6b00;stroke-width:4;stroke-opacity:1}70%{stroke:#ff6b00;stroke-width:3;stroke-opacity:.6}100%{stroke:#ff6b00;stroke-width:2;stroke-opacity:.3}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon" style="background:transparent;padding:0;">
+      <img src="data:image/png;base64,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" style="width:34px;height:34px;object-fit:contain;" alt="Logo">
+    </div>
+    <div>
+      <div class="logo-text">Sadala põllud</div>
+      <div class="logo-sub">Põldude kaart</div>
+    </div>
+  </div>
+  <div class="hdiv"></div>
+  <div class="controls">
+    <div class="cg">
+      <div class="cl">Aasta</div>
+      <select id="yearSel">
+        <option value="k2025">2025</option>
+        <option value="k2024">2024</option>
+        <option value="k2023">2023</option>
+      </select>
+    </div>
+    <div class="cg">
+      <div class="cl">Kultuur</div>
+      <select id="cultSel"><option value="">Kõik kultuurid</option></select>
+    </div>
+    <div class="cg">
+      <div class="cl">Taotleja</div>
+      <select id="priaSel"><option value="">Kõik taotlejad</option></select>
+    </div>
+  </div>
+  <div class="hdiv"></div>
+  <div class="search-wrap">
+    <div class="search-box">
+      <input class="search-input" id="searchInput" type="text" placeholder="Massiiv või kataster…" autocomplete="off" spellcheck="false">
+      <button class="search-clear" id="searchClear" title="Tyhhjenda">×</button>
+    </div>
+    <button class="search-btn" id="searchBtn">Otsi</button>
+    <span class="search-msg" id="searchMsg"></span>
+  </div>
+  <div class="hdiv"></div>
+  <div class="hstats">
+    <div class="hstat">
+      <div class="hstat-val green" id="hArea">–</div>
+      <div class="hstat-lbl">Aktiivsed ha</div>
+    </div>
+    <div class="hdiv"></div>
+    <div class="hstat">
+      <div class="hstat-val" id="hCount">–</div>
+      <div class="hstat-lbl">Põllu</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div id="map"></div>
+  <div class="sidebar">
+
+    <div class="sb-sec">
+      <div class="sb-hdr">Kihid</div>
+      <label class="lrow">
+        <div class="tog"><input type="checkbox" id="togF" checked><div class="tog-track"></div><div class="tog-thumb"></div></div>
+        <div class="lrow-txt"><div class="lrow-name">Põllud</div><div class="lrow-sub">Visuaalne kiht</div></div>
+      </label>
+      <label class="lrow">
+        <div class="tog"><input type="checkbox" id="togS"><div class="tog-track"></div><div class="tog-thumb"></div></div>
+        <div class="lrow-txt"><div class="lrow-name">Mullakaart</div><div class="lrow-sub">Boniteet / lõimis</div></div>
+      </label>
+    </div>
+
+    <div class="sb-sec">
+      <div class="sb-hdr"><span>Kokkuvõte</span><span class="sb-badge" id="sumYear">2025</span></div>
+      <div class="cards">
+        <div class="card"><div class="card-val" id="sumTotal">–</div><div class="card-lbl">Kokku ha</div></div>
+        <div class="card"><div class="card-val" id="sumCount">–</div><div class="card-lbl">Põldu</div></div>
+        <div class="card own"><div class="card-val own" id="sumOwned">–</div><div class="card-lbl">Omandis ha</div></div>
+        <div class="card rent"><div class="card-val rent" id="sumRented">–</div><div class="card-lbl">Rendis ha</div></div>
+      </div>
+      <div class="obar"><div class="obar-own" id="barOwn" style="width:26%"></div><div class="obar-rent" id="barRent" style="width:74%"></div></div>
+      <div class="obar-lbls">
+        <span class="obar-lbl own" id="barOwnPct">–</span>
+        <span class="obar-lbl rent" id="barRentPct">–</span>
+      </div>
+      <div class="kast-note" id="kastNote">Omand/rendis: katastriandmed</div>
+    </div>
+
+    <div class="leg-panel">
+      <div class="leg-hdr">
+        <span class="leg-title" id="legTitle">Kultuurid</span>
+        <span class="leg-badge" id="legCount"></span>
+      </div>
+      <div class="leg-scroll">
+        <div id="cultLeg"></div>
+        <div id="soilLeg" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bmap-wrap">
+    <button class="bmap-btn active" id="bmapStd" title="Standardkaart" onclick="setBasemap('std')">
+      <span class="bmap-label">Kaart</span>
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="18" height="18" rx="2" fill="#e8f2ec" stroke="#2d6a4f" stroke-width="1.5"/>
+        <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="#2d6a4f" stroke-width="1" opacity=".5"/>
+        <path d="M7 13c1.5-2 3.5-2 5 0s3.5 2 5 0" stroke="#2d6a4f" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </button>
+    <button class="bmap-btn" id="bmapSat" title="Satelliitkaart" onclick="setBasemap('sat')">
+      <span class="bmap-label">Satelliit</span>
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="18" height="18" rx="2" fill="#2d3a2a" stroke="#6b9c5a" stroke-width="1.5"/>
+        <circle cx="8" cy="10" r="2.5" fill="#4a7a3a" opacity=".8"/>
+        <circle cx="15" cy="8" r="1.5" fill="#5a8a4a" opacity=".7"/>
+        <rect x="6" y="14" width="8" height="4" rx="1" fill="#5a7a4a" opacity=".6"/>
+        <rect x="15" y="13" width="4" height="5" rx="1" fill="#4a6a3a" opacity=".6"/>
+      </svg>
+    </button>
+  </div>
+  <button class="geo-btn" id="geoBtn" title="Minu asukoht">
+    <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+      <circle cx="12" cy="12" r="4" stroke="#4a4540" stroke-width="2"/>
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#4a4540" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
+<div id="loading"><div class="loader"></div><div class="loader-text">Laen kaardiandmeid…</div></div>
+<script>
+(function(){
+  var lc=document.createElement('link');lc.rel='stylesheet';
+  lc.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+  document.head.appendChild(lc);
+  var ls=document.createElement('script');
+  ls.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  ls.onload=initApp;document.head.appendChild(ls);
+})();
+
+// ── RUNTIME STATE ─────────────────────────────────────────────────────────────
+let VIS=null;    // fields.geojson
+let KL=null;     // cadastral.json
+let KS=null;     // ownership.json -> summary
+let MO=null;     // ownership.json -> shares
+let GO=null;     // ownership.json -> globalOwned
+let SL=null;     // soil_lookup.json
+let SS=null;     // soil_stats.json
+// mullaGJ declared in runtime state below (let showF=true,showS=false,mullaGJ=null)
+// ── PALETTE ───────────────────────────────────────────────────────────────────
+// Case-insensitive match by normalized key
+const CC_MAP={
+  "talinisu":"#c49020","taliraps":"#b8a000","suvinisu":"#e0aa30","suvioder":"#d4903a",
+  "kaer":"#a8b848","varane oder":"#c0a040","talioder":"#b07830",
+  "pr":"#4d9e6a","püsirohumaa":"#4d9e6a","põldhein":"#5cb870",
+  "põldhein i":"#62c078","põldhein ii":"#58b86e","põldhein iii":"#4eac64",
+  "põldhein iv":"#44a05a","põldhein v":"#3a9450",
+  "kõrreliste rohumaa":"#3d8a55","muud kõrrelised":"#5a9e6a",
+  "har. lutsern":"#80b858","punane ristik":"#9ecb6f",
+  "liblikõieliste ja muude põllumajanduskultuuride se":"#78a868",
+  "muud liblikõielised (vähemalt 80% liblikõielisi, k":"#70a060",
+  "muu heintaimede segu":"#68a058",
+  "põldhernes":"#7ab870","põlduba":"#609878",
+  "kanep":"#6b8e5a","kanep, estica":"#5e8050","kanep, bialobrzeskie":"#527848",
+  "mais":"#58a030","keerispea":"#70b040",
+  "segavili":"#b89858","vahekultuur":"#8898b0",
+  "haljaskesa":"#98c880","mustkesa":"#a09078",
+  "söödis":"#a09078","talirüps":"#c0a800",
+  "talivikk":"#a09858","tatar":"#b8a878",
+  "p":"#90a870","muu":"#909088"
+};
+function cc(c){
+  if(!c||c==="-")return"#b8b4ae";
+  const k=c.toLowerCase().trim();
+  if(CC_MAP[k])return CC_MAP[k];
+  if(k.includes("talinisu"))return"#c49020";
+  if(k.includes("taliraps")||k.includes("talir\u00fcps"))return"#b8a000";
+  if(k.includes("nisu"))return"#e0aa30";
+  if(k.includes("oder")||k.includes("kaer"))return"#a8b848";
+  if(k.includes("mais"))return"#58a030";
+  if(k.includes("kanep"))return"#6b8e5a";
+  if(k.includes("rohu")||k.includes("hein")||k.includes("lutsern")||k.includes("ristik"))return"#5cb870";
+  if(k.includes("raps"))return"#b8a000";
+  if(k.includes("kesa"))return"#a09078";
+  if(k.includes("kõr"))return"#3d8a55";
+  return"#909088";
+}
+const SCM=[["ls","#d4b87e"],["sl","#c8b080"],["s","#e8d4a0"],["l","#c8a97a"],["k","#8fac7a"],["r","#a07a6a"],["t","#7a9890"],["p","#b8a090"]];
+const BR=[
+  {label:"Hindamata",min:-1,max:0,color:"#b0a080"},{label:"< 20",min:1,max:19,color:"#c85a30"},
+  {label:"20\u201329",min:20,max:29,color:"#d4855a"},{label:"30\u201339",min:30,max:39,color:"#d4aa78"},
+  {label:"40\u201349",min:40,max:49,color:"#9ab858"},{label:"50\u201359",min:50,max:59,color:"#4d9e6a"},
+  {label:"60+",min:60,max:999,color:"#2d7a4a"}
+];
+function sc(l){if(!l)return"#c4b49a";const k=l.toLowerCase();for(const[p,c]of SCM)if(k.startsWith(p))return c;return"#c4b49a";}
+function bc(b){if(!b)return BR[0].color;for(const r of BR)if(b>=r.min&&b<=r.max)return r.color;return BR[BR.length-1].color;}
+function bl(b){if(!b)return"Hindamata";for(const r of BR)if(b>=r.min&&b<=r.max)return r.label;return"60+";}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function pa(s){return parseFloat(String(s||0).replace(",","."))||0;}
+function fmt(n){if(!n||n===0)return"0";if(n<10)return n.toFixed(2);if(n<100)return n.toFixed(1);return Math.round(n).toLocaleString("et-EE");}
+function isDash(v){return !v||v==="-"||v.trim()==="-";}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let map,flayer=null,slayer=null,umarker=null;
+let year="k2025",cult="",pria="";
+let showF=true,showS=false,mullaGJ=null;
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+// Returns VIS features that are:
+//   1. active for selected year (kultuur != "-")
+//   2. matching culture filter
+//   3. matching PRIA taotleja filter
+function getFiltered(){
+  if(!VIS)return[];
+  return VIS.features.filter(f=>{
+    const p=f.properties;
+    const c=p[year];
+    if(isDash(c))return false;          // not in use this year
+    if(cult&&c!==cult)return false;
+    if(pria&&p.pria!==pria)return false;
+    return true;
+  });
+}
+
+// For map display: use VIS directly (all features always rendered)
+
+// ── FIELD STATS ───────────────────────────────────────────────────────────────
+// Uses VISUAL layer, excludes "-" fields, row-based area summing
+function fieldStats(rows){
+  let total=0,count=0;
+  const cultures={};
+  for(const f of rows){
+    const p=f.properties;
+    const ha=pa(p.pindala);
+    const c=p[year];
+    if(isDash(c))continue; // safety guard
+    total+=ha; count++;
+    if(!cultures[c])cultures[c]={total:0,count:0};
+    cultures[c].total+=ha; cultures[c].count++;
+  }
+  return{total,count,cultures};
+}
+
+// ── OWNERSHIP STATS ───────────────────────────────────────────────────────────
+// Uses CADASTRAL layer (KS = full totals, KL = per-massiiv lookup)
+// When filters active: approximate ownership from filtered massiivs via KL
+// When no filters: use KS (full cadastral totals)
+function ownershipStats(filteredRows){
+  // Ownership source: Excel "haritav maa" per owned cadastral unit.
+  // GO = global totals (owned 4912 ha, rented 4691 ha) from Excel, no filters.
+  // When filters active: scale GO proportionally by filtered active area.
+  // owned + rented always equals total active area shown in the header.
+  const hasFilter=cult||pria;
+  const activeTotal=filteredRows.reduce((s,f)=>s+pa(f.properties.pindala),0);
+  if(!hasFilter){
+    // No filters: use Excel totals directly, scale to actual active year total
+    const scale=GO.total>0?activeTotal/GO.total:1;
+    const owned=Math.min(GO.owned*scale,activeTotal);
+    const rented=activeTotal-owned;
+    return{owned,rented,total:activeTotal};
+  }
+  // Filters active: use per-massiiv owned fraction (count-weighted from cadastral)
+  // scaled so that unfiltered total matches Excel ground truth
+  const globalOwnFrac=GO.total>0?GO.owned/GO.total:0.511;
+  let ownedFracTotal=0,totalHa=0;
+  for(const f of filteredRows){
+    const p=f.properties;
+    const ha=pa(p.pindala);
+    const mo=MO[p.massiiv];
+    const frac=mo?mo.o:globalOwnFrac;
+    ownedFracTotal+=ha*frac;
+    totalHa+=ha;
+  }
+  // Scale so that if no filter were applied, result equals GO.owned
+  const rawFrac=totalHa>0?ownedFracTotal/totalHa:globalOwnFrac;
+  const owned=Math.min(rawFrac*activeTotal,activeTotal);
+  const rented=activeTotal-owned;
+  return{owned,rented,total:activeTotal};
+}
+// ── UPDATE SUMMARY ────────────────────────────────────────────────────────────
+function updateSummary(fs,os){
+  const{total,count}=fs;
+  const{owned,rented}=os;
+  const ot=owned+rented;
+  document.getElementById("hArea").textContent=fmt(total);
+  document.getElementById("hCount").textContent=count;
+  document.getElementById("sumTotal").textContent=fmt(total);
+  document.getElementById("sumCount").textContent=count;
+  document.getElementById("sumOwned").textContent=fmt(owned);
+  document.getElementById("sumRented").textContent=fmt(rented);
+  document.getElementById("sumYear").textContent=year.replace("k","");
+  const op=ot>0?(owned/ot*100):26;
+  const rp=100-op;
+  document.getElementById("barOwn").style.width=op.toFixed(1)+"%";
+  document.getElementById("barRent").style.width=rp.toFixed(1)+"%";
+  document.getElementById("barOwnPct").textContent=Math.round(op)+"% omandis";
+  document.getElementById("barRentPct").textContent=Math.round(rp)+"% rendis";
+  document.getElementById("kastNote").textContent=(cult||pria)
+    ?"Omand/rendis: katastriandmed (massiivi l\u00f5ikes)"
+    :"Omand/rendis: k\u00f5ik katastriandmed";
+}
+
+// ── CULTURE LEGEND ────────────────────────────────────────────────────────────
+function renderCultLeg(fs){
+  const{total,cultures}=fs;
+  const sorted=Object.entries(cultures).sort((a,b)=>b[1].total-a[1].total);
+  document.getElementById("legTitle").textContent="Kultuurid";
+  document.getElementById("legCount").textContent=sorted.length;
+  const el=document.getElementById("cultLeg");
+  el.innerHTML="";
+  for(const[name,d]of sorted){
+    const pct=total>0?(d.total/total*100):0;
+    const col=cc(name);
+    const active=cult===name;
+    const row=document.createElement("div");row.className="crow"+(active?" active":"");
+    const top=document.createElement("div");top.className="crow-top";
+    const dot=document.createElement("div");dot.className="crow-dot";dot.style.background=col;
+    const nm=document.createElement("div");nm.className="crow-name";nm.textContent=name;nm.title=name;
+    const ha=document.createElement("div");ha.className="crow-ha";ha.textContent=fmt(d.total)+" ha";
+    const pe=document.createElement("span");pe.className="crow-pct";pe.textContent="("+pct.toFixed(1)+"%)";
+    top.appendChild(dot);top.appendChild(nm);top.appendChild(ha);top.appendChild(pe);
+    row.appendChild(top);
+    const barBg=document.createElement("div");barBg.className="crow-bar";
+    const barFill=document.createElement("div");barFill.className="crow-bar-fill";
+    barFill.style.background=col;barFill.style.width=pct.toFixed(1)+"%";
+    barBg.appendChild(barFill);row.appendChild(barBg);
+    row.addEventListener("click",function(){
+      cult=(cult===name)?"":name;
+      document.getElementById("cultSel").value=cult;
+      render();
+    });
+    el.appendChild(row);
+  }
+}
+
+// ── SOIL LEGEND ───────────────────────────────────────────────────────────────
+function renderSoilLeg(filteredRows){
+  const hasFilter=cult||pria;
+  const bon={};
+  if(hasFilter&&filteredRows.length>0){
+    for(const f of filteredRows){
+      const s=SL[String(f.properties.fid)];if(!s)continue;
+      const ha=pa(f.properties.pindala);
+      const label=bl(s.b),color=bc(s.b);
+      if(!bon[label])bon[label]={ha:0,color};
+      bon[label].ha+=ha;
+    }
+  } else {
+    for(const[b,,ha]of SS){
+      const label=bl(b),color=bc(b);
+      if(!bon[label])bon[label]={ha:0,color};
+      bon[label].ha+=ha;
+    }
+  }
+  const sorted=BR.map(r=>[r.label,bon[r.label]||{ha:0,color:r.color}]).filter(([,d])=>d.ha>0);
+  const total=sorted.reduce((s,[,d])=>s+d.ha,0);
+  document.getElementById("legTitle").textContent="Mullad";
+  document.getElementById("legCount").textContent=sorted.length+" klass";
+  const el=document.getElementById("soilLeg");
+  el.innerHTML="";
+  for(const[label,d]of sorted){
+    const pct=total>0?(d.ha/total*100):0;
+    const row=document.createElement("div");row.className="srow";
+    const top=document.createElement("div");top.className="srow-top";
+    const dot=document.createElement("div");dot.className="srow-dot";dot.style.background=d.color;
+    const nm=document.createElement("div");nm.className="srow-name";nm.textContent="Boniteet "+label;
+    const ha=document.createElement("div");ha.className="srow-ha";ha.textContent=fmt(d.ha)+" ha";
+    const pe=document.createElement("span");pe.className="srow-pct";pe.textContent="("+pct.toFixed(1)+"%)";
+    top.appendChild(dot);top.appendChild(nm);top.appendChild(ha);top.appendChild(pe);
+    row.appendChild(top);
+    const bar=document.createElement("div");bar.className="srow-bar";
+    const fill=document.createElement("div");fill.className="srow-bar-fill";
+    fill.style.background=d.color;fill.style.width=pct.toFixed(1)+"%";
+    bar.appendChild(fill);row.appendChild(bar);
+    el.appendChild(row);
+  }
+  const note=document.createElement("div");note.className="snote";
+  note.textContent=hasFilter
+    ?"Mullastik arvutatud filtreeritud p\u00f5ldude j\u00e4rgi."
+    :"Kogu mullakaardi kiht (ca 32\u00a0660 ha).";
+  el.appendChild(note);
+}
+
+// ── LEGEND SWITCH ─────────────────────────────────────────────────────────────
+function switchLeg(fs,rows){
+  const cEl=document.getElementById("cultLeg");
+  const sEl=document.getElementById("soilLeg");
+  if(showS){
+    cEl.style.display="none";sEl.style.display="block";
+    renderSoilLeg(rows);
+  } else {
+    sEl.style.display="none";cEl.style.display="block";
+    renderCultLeg(fs);
+  }
+}
+
+// ── MAP: SOIL LAYER ───────────────────────────────────────────────────────────
+function renderSoilLayer(){
+  if(slayer){map.removeLayer(slayer);slayer=null;}
+  if(!showS||!mullaGJ)return;
+  slayer=L.geoJSON(mullaGJ,{
+    style:f=>({fillColor:sc(f.properties.l),fillOpacity:.5,color:"rgba(0,0,0,.12)",weight:.7})
+  }).addTo(map);
+  if(flayer)flayer.bringToFront();
+}
+
+// ── MAP: FIELD LAYER ──────────────────────────────────────────────────────────
+function renderFieldLayer(filtered){
+  if(flayer){map.removeLayer(flayer);flayer=null;}
+  if(!showF||!VIS)return;
+
+  // activeFids = fields passing all filters (year active + culture + pria)
+  // All VIS features always rendered — filters only change style, never hide geometry.
+  const activeFids=new Set(filtered.map(f=>f.properties.fid));
+
+  flayer=L.geoJSON(VIS,{
+    style:feat=>{
+      const p=feat.properties;
+      const c=p[year];
+      const yearInactive=isDash(c);
+      const isActive=activeFids.has(p.fid);
+      if(yearInactive)  return{fillColor:"#c8c4be",fillOpacity:.65,color:"rgba(0,0,0,.18)",weight:.7};
+      if(isActive)      return{fillColor:cc(c),fillOpacity:.72,color:"rgba(0,0,0,.30)",weight:1};
+                        return{fillColor:cc(c),fillOpacity:.18,color:"rgba(0,0,0,.09)",weight:.6};
+    },
+    onEachFeature:(feat,layer)=>{
+      const p=feat.properties;
+      layer.on("mouseover",function(){
+        this.setStyle({weight:2,color:"rgba(0,0,0,.45)",fillOpacity:Math.min((this.options.fillOpacity||.2)+.25,.92)});
+        this.bringToFront();
+      });
+      layer.on("mouseout",function(){flayer.resetStyle(this);});
+      layer.on("click",function(){
+        const soil=SL[String(p.fid)]||null;
+        const kd=KL[p.massiiv]||[];
+        layer.bindPopup(buildPopup(p,soil,kd),{maxWidth:340}).openPopup();
+      });
+    }
+  }).addTo(map);
+  if(slayer)flayer.bringToFront();
+}
+
+// ── POPUP ─────────────────────────────────────────────────────────────────────
+function buildPopup(p,soil,kd){
+  const el=document.createElement("div");el.className="pu";
+
+  // Title: PRIA taotleja
+  const priaTxt=document.createElement("div");priaTxt.className="pu-pria";
+  priaTxt.textContent=p.pria||"\u2013";
+  el.appendChild(priaTxt);
+
+  // Field info grid: põllu nr, pindala, massiiv
+  const grid=document.createElement("div");grid.className="pu-grid";
+  function puf(label,val,full){
+    const f=document.createElement("div");f.className="pu-f"+(full?" full":"");
+    const l=document.createElement("div");l.className="pu-fl";l.textContent=label;
+    const v=document.createElement("div");v.className="pu-fv";v.textContent=val||"\u2013";
+    f.appendChild(l);f.appendChild(v);return f;
+  }
+  grid.appendChild(puf("P\u00f5llu nr",p.pollunr));
+  grid.appendChild(puf("Pindala",p.pindala+" ha"));
+  grid.appendChild(puf("Massiiv",p.massiiv,true));
+  el.appendChild(grid);
+
+  // Kataster section: all unique cadastral units for this massiiv
+  const divK=document.createElement("div");divK.className="pu-div";el.appendChild(divK);
+  const kastTitle=document.createElement("div");kastTitle.className="pu-sec";
+  const parcels=kd||[];
+  kastTitle.textContent="Katastrid"+(parcels.length>1?" ("+parcels.length+")":"");
+  el.appendChild(kastTitle);
+
+  if(parcels.length===0){
+    // fallback: single kataster from visual layer
+    const row=document.createElement("div");row.className="pu-kast-row";
+    const kid=document.createElement("span");kid.className="pu-kast-id";kid.textContent=p.kataster||"\u2013";
+    row.appendChild(kid);el.appendChild(row);
+  } else {
+    for(const parcel of parcels){
+      const row=document.createElement("div");row.className="pu-kast-row";
+      const kid=document.createElement("span");kid.className="pu-kast-id";kid.textContent=parcel.k;
+      const ktag=document.createElement("span");
+      ktag.className="pu-kast-tag "+(parcel.u==="O"?"own":"rent");
+      ktag.textContent=parcel.u==="O"?"Omandis":"Rendis";
+      row.appendChild(kid);row.appendChild(ktag);
+      el.appendChild(row);
+    }
+  }
+
+  // Cultures per year
+  const div1=document.createElement("div");div1.className="pu-div";el.appendChild(div1);
+  const ct=document.createElement("div");ct.className="pu-sec";ct.textContent="Kultuurid aastati";el.appendChild(ct);
+  [["2023","k2023"],["2024","k2024"],["2025","k2025"]].forEach(([yr,k])=>{
+    const row=document.createElement("div");row.className="pu-yr";
+    const lbl=document.createElement("div");lbl.className="pu-yr-lbl";lbl.textContent=yr;
+    const c=p[k];
+    if(isDash(c)){
+      const inactive=document.createElement("div");inactive.className="pu-yr-inactive";
+      inactive.textContent="Ei kasutata";
+      row.appendChild(lbl);row.appendChild(inactive);
+    } else {
+      const col=cc(c);
+      const badge=document.createElement("div");badge.className="pu-yr-badge";badge.textContent=c||"\u2013";
+      badge.style.background=col+"1a";badge.style.color=col;badge.style.borderColor=col+"40";
+      if(k===year)badge.style.fontWeight="700";
+      row.appendChild(lbl);row.appendChild(badge);
+    }
+    el.appendChild(row);
+  });
+
+  // Soil
+  if(soil){
+    const div2=document.createElement("div");div2.className="pu-div";el.appendChild(div2);
+    const st=document.createElement("div");st.className="pu-sec";st.textContent="Mullaandmed";el.appendChild(st);
+    const sg=document.createElement("div");sg.className="pu-grid-3";
+    function sf(label,val,col){
+      const f=document.createElement("div");f.className="pu-f";
+      if(col)f.style.borderLeft="3px solid "+col;
+      const l=document.createElement("div");l.className="pu-fl";l.textContent=label;
+      const v=document.createElement("div");v.className="pu-fv";v.textContent=val||"\u2013";
+      f.appendChild(l);f.appendChild(v);return f;
+    }
+    sg.appendChild(sf("Boniteet",soil.b,bc(soil.b)));
+    sg.appendChild(sf("L\u00f5imis",soil.l));
+    sg.appendChild(sf("T\u00fc\u00fcp",soil.s));
+    el.appendChild(sg);
+  }
+  return el;
+}
+
+// ── DROPDOWNS ─────────────────────────────────────────────────────────────────
+function populateDropdowns(){
+  if(!VIS)return;
+  const cs=document.getElementById("cultSel"),prev=cs.value;
+  const cultures=new Set();
+  VIS.features.forEach(f=>{const c=f.properties[year];if(!isDash(c))cultures.add(c);});
+  cs.innerHTML="";
+  const a=document.createElement("option");a.value="";a.textContent="K\u00f5ik kultuurid";cs.appendChild(a);
+  [...cultures].sort().forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;cs.appendChild(o);});
+  cs.value=cultures.has(prev)?prev:"";cult=cs.value;
+
+  const ps=document.getElementById("priaSel");
+  if(ps.children.length<=1){
+    const prias=new Set();
+    VIS.features.forEach(f=>{const p=f.properties.pria;if(p&&p!=="Ei taotle")prias.add(p);});
+    // also add "Ei taotle" at end
+    prias.add("Ei taotle");
+    [...prias].sort().forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=p;ps.appendChild(o);});
+  }
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+function render(){
+  const filtered=getFiltered();
+  const fs=fieldStats(filtered);
+  const os=ownershipStats(filtered);
+  updateSummary(fs,os);
+  switchLeg(fs,filtered);
+  renderFieldLayer(filtered);
+}
+// ── DECOMPRESS ────────────────────────────────────────────────────────────────
+async function decompressB64GZ(b64){
+  const bin=atob(b64),bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  const ds=new DecompressionStream('gzip'),w=ds.writable.getWriter();
+  w.write(bytes);w.close();
+  const r=ds.readable.getReader(),ch=[];
+  while(true){const x=await r.read();if(x.done)break;ch.push(x.value);}
+  const tot=ch.reduce((s,c)=>s+c.length,0),out=new Uint8Array(tot);
+  let off=0;for(const c of ch){out.set(c,off);off+=c.length;}
+  return new TextDecoder().decode(out);
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────────────────
+let searchLayer=null;
+
+function clearSearch(){
+  if(searchLayer){map.removeLayer(searchLayer);searchLayer=null;}
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchMsg').textContent='';
+  document.getElementById('searchMsg').className='search-msg';
+  document.getElementById('searchClear').style.display='none';
+}
+
+function doSearch(){
+  if(!VIS||!KL)return;
+  const raw=document.getElementById('searchInput').value.trim();
+  if(!raw){clearSearch();return;}
+  document.getElementById('searchClear').style.display='flex';
+  if(searchLayer){map.removeLayer(searchLayer);searchLayer=null;}
+  const msg=document.getElementById('searchMsg');
+  const q=raw.toLowerCase();
+
+  // 1. Exact massiiv match
+  let matches=VIS.features.filter(f=>String(f.properties.massiiv).toLowerCase()===q);
+  let matchType='massiiv';
+
+  // 2. Kataster match via KL
+  if(matches.length===0){
+    const hitMassivs=new Set();
+    for(const[massiiv,parcels]of Object.entries(KL)){
+      for(const parcel of parcels){
+        if(parcel.k.toLowerCase()===q||parcel.k.toLowerCase().includes(q)){
+          hitMassivs.add(massiiv);
+        }
+      }
+    }
+    if(hitMassivs.size>0){
+      matches=VIS.features.filter(f=>hitMassivs.has(f.properties.massiiv));
+      matchType='kataster';
+    }
+  }
+
+  // 3. Partial massiiv fallback
+  if(matches.length===0){
+    matches=VIS.features.filter(f=>String(f.properties.massiiv).includes(raw));
+    matchType='massiiv';
+  }
+
+  if(matches.length===0){
+    msg.textContent='Ei leitud: '+raw;
+    msg.className='search-msg err';
+    return;
+  }
+
+  // Zoom to bounds
+  const bounds=L.geoJSON({type:'FeatureCollection',features:matches}).getBounds();
+  map.fitBounds(bounds,{padding:[60,60],maxZoom:16});
+
+  // Highlight with orange outline, fades after 4s
+  searchLayer=L.geoJSON({type:'FeatureCollection',features:matches},{
+    style:{fill:false,color:'#e65c00',weight:3,opacity:1}
+  }).addTo(map);
+  if(flayer)flayer.bringToFront();
+  searchLayer.bringToFront();
+  setTimeout(function(){
+    if(!searchLayer)return;
+    let op=1;
+    const fade=setInterval(function(){
+      op-=0.05;
+      if(op<=0){clearInterval(fade);if(searchLayer){map.removeLayer(searchLayer);searchLayer=null;}}
+      else searchLayer.setStyle({opacity:op});
+    },80);
+  },4000);
+
+  // Open popup on first match
+  const first=matches[0];
+  const soil=SL[String(first.properties.fid)]||null;
+  const kd=KL[first.properties.massiiv]||[];
+  const tmpLayer=L.geoJSON({type:'FeatureCollection',features:[first]});
+  const center=tmpLayer.getBounds().getCenter();
+  L.popup({maxWidth:340}).setLatLng(center)
+    .setContent(buildPopup(first.properties,soil,kd)).addTo(map).openOn(map);
+
+  const n=matches.length;
+  msg.textContent=n+(matchType==='kataster'?' katastr. kirjet':' massiiv')+(n===1?' leitud':' leitud');
+  msg.className='search-msg ok';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function loadData(onReady){
+  const setStatus=msg=>{
+    const el=document.getElementById('loading');
+    if(el)el.querySelector('.loader-text').textContent=msg;
+  };
+  setStatus('Laen andmeid\u2026');
+  Promise.all([
+    fetch('./data/fields.geojson').then(r=>r.json()),
+    fetch('./data/cadastral.json').then(r=>r.json()),
+    fetch('./data/ownership.json').then(r=>r.json()),
+    fetch('./data/soil_lookup.json').then(r=>r.json()),
+    fetch('./data/soil_stats.json').then(r=>r.json()),
+  ]).then(([fields,cadastral,ownership,soilLookup,soilStats])=>{
+    VIS=fields;
+    KL=cadastral;
+    GO=ownership.globalOwned;
+    MO=ownership.shares;
+    KS=ownership.summary;
+    SL=soilLookup;
+    SS=soilStats;
+    document.getElementById('loading').style.display='none';
+    map.fitBounds(L.geoJSON(VIS).getBounds(),{padding:[24,24]});
+    populateDropdowns();
+    render();
+  }).catch(e=>{
+    console.error('Data load error:',e);
+    const el=document.getElementById('loading');
+    if(el)el.querySelector('.loader-text').textContent='Viga andmete laadimisel: '+e.message;
+  });
+}
+
+function loadSoil(onReady){
+  if(mullaGJ){onReady();return;}
+  document.getElementById('loading').style.display='flex';
+  document.getElementById('loading').querySelector('.loader-text').textContent='Laen mullakaart\u2026';
+  fetch('./data/soil.geojson').then(r=>r.json()).then(data=>{
+    mullaGJ=data;
+    document.getElementById('loading').style.display='none';
+    onReady();
+  }).catch(e=>{
+    console.error('Soil load error:',e);
+    document.getElementById('loading').style.display='none';
+  });
+}
+
+function initApp(){
+  map=L.map('map',{zoomControl:false});
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  // Basemap layers
+  const BASEMAPS={
+    std:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+      attribution:'\u00a9 OpenStreetMap \u00a9 CARTO',subdomains:'abcd',maxZoom:20
+    }),
+    sat:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      attribution:'\u00a9 Esri, Maxar, Earthstar Geographics',maxZoom:20
+    })
+  };
+  let activeBasemap='std';
+  BASEMAPS.std.addTo(map);
+  window.setBasemap=function(id){
+    if(id===activeBasemap)return;
+    map.removeLayer(BASEMAPS[activeBasemap]);
+    BASEMAPS[id].addTo(map);
+    if(flayer)flayer.bringToFront();
+    if(slayer)slayer.bringToFront();
+    activeBasemap=id;
+    document.getElementById('bmapStd').classList.toggle('active',id==='std');
+    document.getElementById('bmapSat').classList.toggle('active',id==='sat');
+  };
+  map.setView([58.85,26.3],10);
+
+  // Wire controls immediately — render() guards on VIS===null
+  document.getElementById('searchBtn').addEventListener('click',doSearch);
+  document.getElementById('searchInput').addEventListener('keydown',function(e){
+    if(e.key==='Enter')doSearch();
+    if(e.key==='Escape')clearSearch();
+  });
+  document.getElementById('searchInput').addEventListener('input',function(){
+    document.getElementById('searchClear').style.display=this.value?'flex':'none';
+    if(!this.value)clearSearch();
+  });
+  document.getElementById('searchClear').addEventListener('click',clearSearch);
+  document.getElementById('yearSel').addEventListener('change',function(){year=this.value;populateDropdowns();render();});
+  document.getElementById('cultSel').addEventListener('change',function(){cult=this.value;render();});
+  document.getElementById('priaSel').addEventListener('change',function(){pria=this.value;render();});
+  document.getElementById('togF').addEventListener('change',function(){showF=this.checked;renderFieldLayer(getFiltered());});
+  document.getElementById('togS').addEventListener('change',function(){
+    showS=this.checked;
+    if(showS&&!mullaGJ){
+      loadSoil(()=>{renderSoilLayer();render();});
+    } else {
+      renderSoilLayer();render();
+    }
+  });
+  document.getElementById('geoBtn').addEventListener('click',function(){
+    if(!navigator.geolocation){alert('Geolocation ei ole toetatud');return;}
+    navigator.geolocation.getCurrentPosition(pos=>{
+      map.setView([pos.coords.latitude,pos.coords.longitude],15);
+      if(umarker)map.removeLayer(umarker);
+      umarker=L.circleMarker([pos.coords.latitude,pos.coords.longitude],
+        {radius:9,fillColor:'#2d6a4f',color:'#fff',weight:2.5,fillOpacity:.9}).addTo(map);
+      umarker.bindPopup('<div style="font-family:inherit;font-size:12px;padding:2px 4px;font-weight:500;">Sinu asukoht</div>').openPopup();
+    },()=>alert('Asukoha tuvastamine ebaõnnestus'));
+  });
+
+  loadData();
+}
+</script>
+</body>
+</html>
